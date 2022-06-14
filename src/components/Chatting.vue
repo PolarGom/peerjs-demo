@@ -64,10 +64,11 @@ export default {
       this.$EventBus.off('chatReceive')
     },
     onClickSend() {
-      this.addChatMsg(this.id, this.chatMsg, true)
-      // this.chatMsg = ''
-
-      this.sendSocket(this.id, this.roomId, this.chatMsg)
+      if (this.chatMsg !== '') {
+        this.addChatMsg(this.id, this.chatMsg, true)
+        this.sendSocket(this.id, this.roomId, this.chatMsg)
+        this.chatMsg = ''
+      }
     },
     sendSocket(id, roomId, chatMsg) {
       let request = {}

@@ -45,11 +45,16 @@ export default {
 
       this.peer.disconnect()
       this.$EventBus.off('chat')
+      this.$EventBus.off('paint')
     },
     init() {
       this.$EventBus.on('chat', (data) => {
-        console.log(data)
         this.sendData(data)
+      })
+      this.$EventBus.on('paint', (data) => {
+        if (this.isOwner()) {
+          this.sendData(data)
+        }
       })
 
       this.onInitPeer()
@@ -123,7 +128,7 @@ export default {
         this.emitEventBusBySystem('방에 접속하였습니다.')
       })
       this.conn.on('data', (data) => {
-        console.log('방 Received', data)
+        // console.log('방 Received', data)
         this.emitEventBus(data)
       })
       this.conn.on('close', () => {
@@ -182,7 +187,11 @@ export default {
       return this.id === this.roomId
     },
     emitEventBus(data) {
-      this.$EventBus.emit('chatReceive', data)
+      if (data.msgType === 'chat') {
+        this.$EventBus.emit('chatReceive', data)
+      } else if (data.msgType === 'paint') {
+        this.$EventBus.emit('paintReceive', data)
+      }
     },
     emitEventBusBySystem(msg) {
       this.emitEventBus({ msgType: 'chat', data: { sendId: 'System', msg: msg } })

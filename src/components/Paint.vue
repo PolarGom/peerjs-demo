@@ -25,6 +25,7 @@ export default {
   },
   data() {
     return {
+      isOwner: false,
       canvas: null,
       canvasContext: null,
       drawing: {
@@ -43,13 +44,52 @@ export default {
   created() {
   },
   mounted() {
+    this.isOwner = this.id === this.roomId
+    this.init()
     this.initCanvas()
     // window.addEventListener('resize', this.onViewResize)
   },
   unmounted() {
-    // window.removeEventListener('resize', this.onViewResize)
+    this.unMounted()
   },
   methods: {
+    init() {
+      this.$EventBus.on('paintReceive', this.onReceivePaint)
+    },
+    onReceivePaint(receiveData) {
+      const isStart = receiveData.data.isStart
+
+      if (isStart === undefined) {
+        // 그리는 중
+        if (receiveData.data.func === 'draw') {
+          this.onDrawing({
+            offsetX: this.canvas.width * receiveData.data.xp,
+            offsetY:this.canvas.height * receiveData.data.yp,
+            receive: true
+          })
+        } else if (receiveData.data.func === 'AllClear') {
+          this.onExecuteFunc(receiveData.data.func)
+        }
+      } else {
+        if (isStart) {
+          this.pen.type = receiveData.data.penType
+          this.pen.color = receiveData.data.color
+          this.pen.lineWidth = receiveData.data.lineWidth
+          this.pen.lineCap = receiveData.data.lineCap
+          this.onDrawReady({
+            offsetX: this.canvas.width * receiveData.data.xp,
+            offsetY:this.canvas.height * receiveData.data.yp,
+            receive: true
+          })
+        } else {
+          this.onDrawStop()
+        }
+      }
+    },
+    unMounted() {
+      this.$EventBus.off('paintReceive')
+      // window.removeEventListener('resize', this.onViewResize)
+    },
     initCanvas() {
       this.canvas = document.getElementById('canvas')
       this.canvasContext = this.canvas.getContext('2d')
@@ -69,14 +109,17 @@ export default {
       this.drawing.offsetX = event.offsetX
       this.drawing.offsetY = event.offsetY
 
-      this.onSendSocket({
+      this.sendSocket({
         func: 'draw',
         isStart: true,
+        penType: this.pen.type,
         lineCap: this.pen.lineCap,
         lineWidth: this.pen.lineWidth,
         color: this.pen.color,
         x: this.drawing.offsetX,
-        y: this.drawing.offsetY
+        y: this.drawing.offsetY,
+        xp: this.drawing.offsetX / this.canvas.width,
+        yp: this.drawing.offsetY / this.canvas.height
       })
     },
     onDrawing(event) {
@@ -92,12 +135,18 @@ export default {
         this.drawing.offsetX = newX
         this.drawing.offsetY = newY
 
-        this.onSendSocket({ func: 'draw', x: newX, y: newY })
+        this.sendSocket({
+          func: 'draw',
+          x: newX,
+          y: newY,
+          xp: newX / this.canvas.width,
+          yp: newY / this.canvas.height
+        })
       }
     },
     onDrawStop() {
       this.drawing.isStart = false
-      this.onSendSocket({ func: 'draw', isStart: false })
+      this.sendSocket({ func: 'draw', isStart: false })
     },
     onViewResize() {
       this.onUpdateCanvasSize()
@@ -128,19 +177,21 @@ export default {
       }
     },
     onAllClear() {
-      this.onSendPaintInfo({ func: 'allClear' })
+      this.sendSocket({ func: 'AllClear' })
       this.canvasContext.clearRect(0, 0, this.canvas.width, this.canvas.height)
     },
     /**
      * 상대방에게 나의 페인트 정보 전송
      *
-     * @method onSendPaintInfo
+     * @method sendSocket
      * @param {Object} data 전송 할 데이터
      */
-    onSendSocket(data) {
+    sendSocket(data) {
       let request = {}
       request.msgType = 'paint'
       request.data = data
+
+      this.$EventBus.emit('paint', request)
     }
   }
 }
