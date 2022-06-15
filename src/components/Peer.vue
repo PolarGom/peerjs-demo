@@ -46,6 +46,10 @@ export default {
       this.peer.disconnect()
       this.$EventBus.off('chat')
       this.$EventBus.off('paint')
+
+      if (this.reconnectTimer !== null) {
+        window.clearTimeout(this.reconnectTimer)
+      }
     },
     init() {
       this.$EventBus.on('chat', (data) => {
@@ -133,10 +137,8 @@ export default {
       })
       this.conn.on('close', () => {
         console.log('방과의 접속이 닫혔습니다.')
+        this.emitEventBusBySystem('방과의 연결에 끊겼습니다. 재접속을 시도합니다.')
         this.roomReconnect()
-      })
-      this.conn.on('disconnected', () => {
-        console.log('방과의 접속이 끊겼습니다.')
       })
     },
     roomReconnect() {

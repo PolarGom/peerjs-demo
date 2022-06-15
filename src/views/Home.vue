@@ -13,6 +13,8 @@
 </template>
 
 <script>
+import { mapMutations } from 'vuex'
+
 export default {
   data() {
     return {
@@ -28,7 +30,14 @@ export default {
     this.id = this.getUUIDv4()
   },
   methods: {
+    ...mapMutations([
+      'setUserInfo',
+      'setRoomInfo'
+    ]),
     onClickJoin() {
+      this.setUserInfo({ userId: this.id })
+      this.setRoomInfo({ roomId: this.roomId })
+
       this.$router.push({ name: 'Room', query: { roomId: this.roomId, id: this.id } })
     },
     getUUIDv4() {

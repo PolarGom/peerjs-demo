@@ -10,6 +10,8 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
+
 export default {
   props: {
     id: {
@@ -25,7 +27,6 @@ export default {
   },
   data() {
     return {
-      isOwner: false,
       canvas: null,
       canvasContext: null,
       drawing: {
@@ -41,10 +42,14 @@ export default {
       }
     }
   },
+  computed: {
+    ...mapGetters([
+      'isOwner'
+    ])
+  },
   created() {
   },
   mounted() {
-    this.isOwner = this.id === this.roomId
     this.init()
     this.initCanvas()
     // window.addEventListener('resize', this.onViewResize)
@@ -95,7 +100,30 @@ export default {
       this.canvasContext = this.canvas.getContext('2d')
       this.onUpdateCanvasSize()
     },
+    getPaintXY(event) {
+      let x = null
+      let y = null
+
+      if (this.isOwner || event.receive !== undefined) {
+        x = event.offsetX
+        y = event.offsetY
+      }
+
+      return {
+        x: x,
+        y: y,
+        isDrawPossible: x !== null && y !== null
+      }
+    },
     onDrawReady(event) {
+      const { x, y, isDrawPossible } = this.getPaintXY(event)
+
+      console.log(x, y, isDrawPossible)
+
+      if (!isDrawPossible) {
+        return
+      }
+
       this.canvasContext.lineCap = this.pen.lineCap
       this.canvasContext.lineWidth = this.pen.lineWidth
       this.canvasContext.strokeStyle = this.pen.color
@@ -106,8 +134,8 @@ export default {
       }
 
       this.drawing.isStart = true
-      this.drawing.offsetX = event.offsetX
-      this.drawing.offsetY = event.offsetY
+      this.drawing.offsetX = x
+      this.drawing.offsetY = y
 
       this.sendSocket({
         func: 'draw',
@@ -123,9 +151,15 @@ export default {
       })
     },
     onDrawing(event) {
+      const { x, y, isDrawPossible } = this.getPaintXY(event)
+
+      if (!isDrawPossible) {
+        return
+      }
+
       if (this.drawing.isStart) {
-        const newX = event.offsetX
-        const newY = event.offsetY
+        const newX = x
+        const newY = y
 
         this.canvasContext.beginPath()
         this.canvasContext.moveTo(this.drawing.offsetX, this.drawing.offsetY)
@@ -145,6 +179,10 @@ export default {
       }
     },
     onDrawStop() {
+      if (!this.isOwner) {
+        return
+      }
+
       this.drawing.isStart = false
       this.sendSocket({ func: 'draw', isStart: false })
     },
@@ -158,6 +196,10 @@ export default {
       })
     },
     onChangePen(pen) {
+      if (!this.isOwner) {
+        return
+      }
+
       if (pen.type === 'paint') {
         this.onExecuteFunc(pen.func)
       } else if (pen.type === 'pen') {
