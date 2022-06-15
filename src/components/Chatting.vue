@@ -24,19 +24,9 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
+
 export default {
-  props: {
-    id: {
-      type: String,
-      required: true,
-      default: ''
-    },
-    roomId: {
-      type: String,
-      required: true,
-      default: ''
-    }
-  },
   data() {
     return {
       chatMsg: '',
@@ -50,6 +40,12 @@ export default {
   },
   unmounted() {
     this.unMounted()
+  },
+  computed: {
+    ...mapGetters({
+      userId: 'getUserId',
+      roomId: 'getRoomId'
+    })
   },
   methods: {
     init() {
@@ -65,16 +61,16 @@ export default {
     },
     onClickSend() {
       if (this.chatMsg !== '') {
-        this.addChatMsg(this.id, this.chatMsg, true)
-        this.sendSocket(this.id, this.roomId, this.chatMsg)
+        this.addChatMsg(this.userId, this.chatMsg, true)
+        this.sendSocket(this.userId, this.roomId, this.chatMsg)
         this.chatMsg = ''
       }
     },
-    sendSocket(id, roomId, chatMsg) {
+    sendSocket(sendId, roomId, chatMsg) {
       let request = {}
       request.msgType = 'chat'
       request.data = {
-        sendId: id,
+        sendId: sendId,
         roomId: roomId,
         msg: chatMsg,
         isSelfSend: false

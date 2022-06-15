@@ -3,19 +3,9 @@
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
+
 export default {
-  props: {
-    id: {
-      type: String,
-      required: true,
-      default: ''
-    },
-    roomId: {
-      type: String,
-      required: true,
-      default: ''
-    }
-  },
   data() {
     return {
       peer: null,
@@ -33,9 +23,16 @@ export default {
   unmounted() {
     this.unMounted()
   },
+  computed: {
+    ...mapGetters({
+      isOwner: 'getIsOwner',
+      userId: 'getUserId',
+      roomId: 'getRoomId'
+    })
+  },
   methods: {
     unMounted() {
-      if (this.isOwner()) {
+      if (this.isOwner) {
         Object.values(this.peers).forEach(o => {
           o.close()
         })
@@ -56,7 +53,7 @@ export default {
         this.sendData(data)
       })
       this.$EventBus.on('paint', (data) => {
-        if (this.isOwner()) {
+        if (this.isOwner) {
           this.sendData(data)
         }
       })
@@ -76,9 +73,9 @@ export default {
       })
     },
     createPeer(stream) {
-      console.log('접속 아이디: ', this.id, '접속 룸: ', this.roomId, '스트림 정보: ', stream)
+      console.log('접속 아이디: ', this.userId, '접속 룸: ', this.roomId, '스트림 정보: ', stream)
 
-      this.peer = new window.Peer(this.id)
+      this.peer = new window.Peer(this.userId)
       this.peer.on('open', this.onOpen)
       this.peer.on('error', (error) => {
         console.log('My Peer error: ', error)
@@ -117,7 +114,7 @@ export default {
       this.roomConnect()
     },
     roomConnect() {
-      if (this.isOwner()) {
+      if (this.isOwner) {
         console.log('동일한 아이디에 동일한 방 아이디는 커넥션 할 필요가 없습니다.')
         return
       }
@@ -142,7 +139,7 @@ export default {
       })
     },
     roomReconnect() {
-      if (!this.isOwner()) {
+      if (!this.isOwner) {
         if (this.conn !== null) {
           this.conn.close()
         }
@@ -175,7 +172,7 @@ export default {
       })
     },
     sendData(data) {
-      if (this.isOwner()) {
+      if (this.isOwner) {
         // 방장인 경우
         Object.values(this.peers).forEach(o => {
           o.send(data)
@@ -184,9 +181,6 @@ export default {
         // 방장이 아닌 경우
         this.conn.send(data)
       }
-    },
-    isOwner() {
-      return this.id === this.roomId
     },
     emitEventBus(data) {
       if (data.msgType === 'chat') {

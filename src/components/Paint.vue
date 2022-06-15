@@ -13,18 +13,6 @@
 import { mapGetters } from 'vuex'
 
 export default {
-  props: {
-    id: {
-      type: String,
-      required: true,
-      default: ''
-    },
-    roomId: {
-      type: String,
-      required: true,
-      default: ''
-    }
-  },
   data() {
     return {
       canvas: null,
@@ -43,9 +31,9 @@ export default {
     }
   },
   computed: {
-    ...mapGetters([
-      'isOwner'
-    ])
+    ...mapGetters({
+      isOwner: 'getIsOwner'
+    })
   },
   created() {
   },
@@ -117,8 +105,6 @@ export default {
     },
     onDrawReady(event) {
       const { x, y, isDrawPossible } = this.getPaintXY(event)
-
-      console.log(x, y, isDrawPossible)
 
       if (!isDrawPossible) {
         return

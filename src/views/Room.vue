@@ -10,22 +10,16 @@
     </div>
     <div id="layout_content">
       <div id="layout_chat">
-        <chatting
-          :id="id"
-          :roomId="roomId" />
+        <chatting />
       </div>
       <div id="layout_canvas">
         <paint
-          ref="paint"
-          :id="id"
-          :roomId="roomId" />
+          ref="paint" />
       </div>
       <div id="layout_cam">
         <cam />
       </div>
-      <peer
-        :id="id"
-        :roomId="roomId" />
+      <peer />
     </div>
   </div>
 </template>

@@ -1,13 +1,20 @@
 import { createStore } from 'vuex'
+import createPersistedState from 'vuex-persistedstate'
 
 export default createStore({
   state: {
-    userId: '',
-    roomId: ''
+    userId: null,
+    roomId: null
   },
   getters: {
-    isOwner(state) {
-      return state.userId === state.roomId
+    getIsOwner(state) {
+      return state.userId === null || state.roomId === null? false : state.userId === state.roomId
+    },
+    getUserId(state) {
+      return state.userId
+    },
+    getRoomId(state) {
+      return state.roomId
     }
   },
   mutations: {
@@ -17,5 +24,10 @@ export default createStore({
     setRoomInfo(state, value) {
       state.roomId = value.roomId
     }
-  }
+  },
+  plugins: [
+    createPersistedState({
+      storage: window.sessionStorage
+    })
+  ]
 })
