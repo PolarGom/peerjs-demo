@@ -13,7 +13,8 @@ export default {
       peers: {},
       peerCalls: {},
       reconnectTimer: null,
-      videoStream: null
+      videoStream: null,
+      isUnMounted: false
     }
   },
   created() {
@@ -34,6 +35,8 @@ export default {
   },
   methods: {
     unMounted() {
+      this.isUnMounted = true
+
       if (this.isOwner) {
         Object.values(this.peers).forEach(o => {
           o.close()
@@ -164,6 +167,10 @@ export default {
       })
     },
     roomReconnect() {
+      if (this.isUnMounted) {
+        return
+      }
+
       if (!this.isOwner) {
         if (this.conn !== null) {
           this.conn.close()
