@@ -128,7 +128,7 @@ export default {
 }
 
 #layout_content > #layout_cam {
-  flex-basis: 260px;
+  flex-basis: 240px;
   flex-shrink: 0;
   height: 100%;
 }

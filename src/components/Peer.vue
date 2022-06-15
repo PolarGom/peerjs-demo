@@ -1,5 +1,5 @@
 <template>
-  챗
+  &nbsp;
 </template>
 
 <script>
@@ -11,7 +11,9 @@ export default {
       peer: null,
       conn: null,
       peers: {},
-      reconnectTimer: null
+      peerCalls: {},
+      reconnectTimer: null,
+      videoStream: null
     }
   },
   created() {
@@ -65,15 +67,18 @@ export default {
         video: true,
         audio: true
       }).then((stream) => {
-        this.createPeer(stream)
+        this.videoStream = stream
+        this.$EventBus.emit('videoStream', { userId: this.userId, stream: stream })
+
+        this.createPeer()
       }).catch((error) => {
         console.log(error)
-        alert('카메라 및 오디오를 거부하였습니다.')
-        this.createPeer(null)
+        this.emitChatEventBusBySystem('카메라 및 오디오를 거부하였습니다.')
+        this.createPeer()
       })
     },
-    createPeer(stream) {
-      console.log('접속 아이디: ', this.userId, '접속 룸: ', this.roomId, '스트림 정보: ', stream)
+    createPeer() {
+      console.log('접속 아이디: ', this.userId, '접속 룸: ', this.roomId)
 
       this.peer = new window.Peer(this.userId)
       this.peer.on('open', this.onOpen)
@@ -89,7 +94,7 @@ export default {
     onOpponentConnect(connection) {
       console.log('상대방 접속 성공: ', connection)
 
-      this.emitEventBusBySystem(`${connection.peer} 님이 접속하였습니다.`)
+      this.emitChatEventBusBySystem(`${connection.peer} 님이 접속하였습니다.`)
 
       this.peers[connection.peer] = connection
       this.peers[connection.peer].on('error', (error) => {
@@ -104,14 +109,33 @@ export default {
         console.log('상대방과의 접속이 닫혔습니다.: ', connection.peer)
 
         delete this.peers[connection.peer]
+        delete this.peerCalls[connection.peer]
 
         console.log('남은 상대방 수: ', Object.keys(this.peers))
+        this.$EventBus.emit('videoStreamRemove', { userId: connection.peer })
+      })
+
+      // call 을 한번 호출해도 오디오와 비디오를 활성화 시켰다면 on('stream'...) 을 두번 호출한다. on('call'...) 또한 마찬가지이다.
+      this.peerCalls[connection.peer] = this.peer.call(connection.peer, this.videoStream)
+      this.peerCalls[connection.peer].on('stream', (userVideoStream) => {
+        this.emitEventBus({ msgType: 'video', data: { event: 'videoStream', userId: connection.peer, stream: userVideoStream } })
+      })
+      this.peerCalls[connection.peer].on('close', () => {
+        console.log('종료')
+        this.emitEventBus({ msgType: 'video', data: { event: 'videoStreamRemove', userId: connection.peer } })
       })
     },
     onOpen(id) {
       console.log('My Peer Id: ', id)
 
       this.roomConnect()
+
+      this.peer.on('call', (call) => {
+        call.answer(this.videoStream)
+        call.on('stream', (userVideoStream) => {
+	        this.emitEventBus({ msgType: 'video', data: { event: 'videoStream', userId: call.peer, stream: userVideoStream } })
+        })
+      })
     },
     roomConnect() {
       if (this.isOwner) {
@@ -126,7 +150,7 @@ export default {
       this.conn = this.peer.connect(this.roomId)
       this.conn.on('open', () => {
         console.log('방 접속 성공: ', this.roomId)
-        this.emitEventBusBySystem('방에 접속하였습니다.')
+        this.emitChatEventBusBySystem('방에 접속하였습니다.')
       })
       this.conn.on('data', (data) => {
         // console.log('방 Received', data)
@@ -134,7 +158,8 @@ export default {
       })
       this.conn.on('close', () => {
         console.log('방과의 접속이 닫혔습니다.')
-        this.emitEventBusBySystem('방과의 연결에 끊겼습니다. 재접속을 시도합니다.')
+        this.emitEventBus({ msgType: 'video', data: { event: 'videoStreamRemove', userId: this.roomId } })
+        this.emitChatEventBusBySystem('방과의 연결에 끊겼습니다. 재접속을 시도합니다.')
         this.roomReconnect()
       })
     },
@@ -187,9 +212,11 @@ export default {
         this.$EventBus.emit('chatReceive', data)
       } else if (data.msgType === 'paint') {
         this.$EventBus.emit('paintReceive', data)
+      } else if (data.msgType === 'video') {
+        this.$EventBus.emit(data.data.event, data.data)
       }
     },
-    emitEventBusBySystem(msg) {
+    emitChatEventBusBySystem(msg) {
       this.emitEventBus({ msgType: 'chat', data: { sendId: 'System', msg: msg } })
     }
   }
