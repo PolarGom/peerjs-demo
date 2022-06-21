@@ -215,9 +215,10 @@ export default {
       }
     },
     emitEventBus(data) {
+      console.log(data)
       if (data.msgType === 'chat') {
         this.$EventBus.emit('chatReceive', data)
-      } else if (data.msgType === 'paint') {
+      } else if (data.msgType === 'paint' || data.msgType === 'paint-img') {
         this.$EventBus.emit('paintReceive', data)
       } else if (data.msgType === 'video') {
         this.$EventBus.emit(data.data.event, data.data)

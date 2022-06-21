@@ -7,6 +7,7 @@
       <button @click="onClickPaintPen(paintPen.color1)">색상 빨강</button>
       <button @click="onClickPaintPen(paintPen.color2)">생상 초록</button>
       <button @click="onClickPaintPen(paintPen.color3)">색상 파랑</button>
+      <button @click="onClickImage">이미지 불러오기</button>
     </div>
     <div id="layout_content">
       <div id="layout_chat">
@@ -83,6 +84,10 @@ export default {
   methods: {
     onClickPaintPen(pen) {
       this.$refs.paint.onChangePen(pen)
+    },
+    onClickImage() {
+      const imageUrl = 'https://t2.daumcdn.net/thumb/R720x0.fjpg/?fname=http://t1.daumcdn.net/brunch/service/user/2fG8/image/Pd36VU2WcEcEjGBDPuKtJh0yoqM.jpg'
+      this.$refs.paint.drawImage(imageUrl)
     }
   }
 }
